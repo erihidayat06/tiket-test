@@ -49,18 +49,11 @@ const getAll = async (req, res, next) => {
   }
 };
 
-const postMovie = async (req, res, next) => {
-  const { name_film, picture, trailer, deskripsi, durasi, sutradara, rate_age, broadcast_date, end_of_show } = req.body;
-
-  if (!name_film || !picture) {
-    return res.status(400).json({
-      error: "Bad Request",
-      message: "name_film and picture are required",
-    });
-  }
-
+const create = async (req, res) => {
+  let connection;
   try {
-    const connection = await new Promise((resolve, reject) => {
+    // Mendapatkan koneksi dari pool
+    connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
         if (err) {
           reject(err);
@@ -70,38 +63,52 @@ const postMovie = async (req, res, next) => {
       });
     });
 
-    await new Promise((resolve, reject) => {
-      const query = "INSERT INTO tbl_movies SET ?";
-      connection.query(query, [name_film, picture, trailer, deskripsi, durasi, sutradara, rate_age, broadcast_date, end_of_show], function (err, results) {
-        connection.release();
+    let { name_film, picture, trailer, deskripsi, durasi, sutradara, rate_age, broadcast_date, end_of_show } = req.body;
+    let errors = false;
+    let errorMessages = [];
+
+    // Validasi input
+    if (!name_genre) {
+      errors = true;
+      errorMessages.push("Woy nama lu siapa?");
+    }
+    if (!picture) {
+      errors = true;
+      errorMessages.push("Woy nama lu siapa?");
+    }
+
+    if (errors) {
+      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
+      res.status(400).json({ errors: errorMessages });
+      return; // Menghentikan eksekusi fungsi
+    }
+
+    let formData = {
+      name_genre: name_genre,
+    };
+
+    // Menjalankan query untuk memasukkan data
+    const result = await new Promise((resolve, reject) => {
+      connection.query("INSERT INTO tbl_genreses SET ?", formData, (err, result) => {
         if (err) {
           reject(err);
         } else {
-          resolve(results);
+          resolve(result);
         }
       });
     });
 
-    res.json({
-      message: "Movie added successfully",
-      data: {
-        name_film,
-        picture,
-        trailer,
-        deskripsi,
-        durasi,
-        sutradara,
-        rate_age,
-        broadcast_date,
-        end_of_show,
-      },
-    });
+    // Mengirim respons sukses
+    res.json({ data: formData, pesan: "Berhasil Menambah Produk" });
   } catch (err) {
     console.error("Error:", err);
-    return res.status(500).json({
+    res.status(500).json({
       error: "Internal Server Error",
       message: "An error occurred while processing your request",
     });
+  } finally {
+    // Melepaskan koneksi kembali ke pool
+    if (connection) connection.release();
   }
 };
 
