@@ -1,6 +1,6 @@
 var express = require("express");
 var router = express.Router();
-var gendre = require("../controller/gendreController");
+var movie = require("../controller/movieController");
 /* GET home page. */
 router.get("/", movie.getAll);
 router.post("/create", movie.create);
