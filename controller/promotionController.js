@@ -43,7 +43,9 @@ const getAll = async (req, res, next) => {
     }
 
     res.json({
-      promotion: rows,
+      status: true,
+      message: "List Data Posts",
+      promotions: rows,
     });
   } catch (err) {
     console.error("Error:", err);

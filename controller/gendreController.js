@@ -45,7 +45,7 @@ const getAll = async (req, res, next) => {
     return res.status(200).json({
       status: true,
       message: "List Data Posts",
-      data: rows,
+      gendre: rows,
     });
   } catch (err) {
     console.error("Error:", err);

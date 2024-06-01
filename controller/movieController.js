@@ -46,6 +46,7 @@ const getAll = async (req, res, next) => {
 
     res.json({
       status: true,
+      message: "List Data Posts",
       movies: rows,
     });
   } catch (err) {

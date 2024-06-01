@@ -43,6 +43,8 @@ const getAll = async (req, res, next) => {
     }
 
     res.json({
+      status: true,
+      message: "List Data Posts",
       times: rows,
     });
   } catch (err) {

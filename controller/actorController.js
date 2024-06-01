@@ -43,6 +43,7 @@ const getAll = async (req, res, next) => {
     }
 
     res.json({
+      status: true,
       actors: rows,
     });
   } catch (err) {

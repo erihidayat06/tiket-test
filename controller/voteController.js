@@ -43,7 +43,9 @@ const getAll = async (req, res, next) => {
     }
 
     res.json({
-      Votes: rows,
+      status: true,
+      message: "List Data Posts",
+      votes: rows,
     });
   } catch (err) {
     console.error("Error:", err);
