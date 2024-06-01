@@ -3,9 +3,17 @@ var express = require("express");
 var path = require("path");
 var cookieParser = require("cookie-parser");
 var logger = require("morgan");
+var session = require("express-session");
+const app = express();
+const cors = require("cors");
+
+app.use(cors());
+
+const port = 5000;
 
 var movieRouter = require("./routes/movies");
 
+var sessionRouter = require("./routes/session");
 var gendreRouter = require("./routes/gendre");
 var actorRouter = require("./routes/actor");
 var voteRouter = require("./routes/vote");
@@ -15,8 +23,9 @@ var timeRouter = require("./routes/time");
 
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
-
-var app = express();
+var transactionRouter = require("./routes/transaction");
+var registerRouter = require("./routes/register");
+var loginRouter = require("./routes/login");
 
 // view engine setup
 app.set("views", path.join(__dirname, "views"));
@@ -28,18 +37,28 @@ app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
 
+app.use(
+  session({
+    secret: "iniadalahrahasiamu",
+    resave: false,
+    saveUninitialized: true,
+    cookie: { maxAge: 60 * 60 * 1000 },
+  })
+);
+
 app.use("/", indexRouter);
-
-app.use("/movie", movieRouter);
-
-app.use("/gendre", gendreRouter);
+app.use("/api/movie", movieRouter);
+app.use("/api/gendre", gendreRouter);
 app.use("/actor", actorRouter);
 app.use("/vote", voteRouter);
 app.use("/promotion", promotionRouter);
 app.use("/picture", pictureRouter);
 app.use("/time", timeRouter);
-
-app.use("/users", usersRouter);
+app.use("/api/users", usersRouter);
+app.use("/api/transaction", transactionRouter);
+app.use("/api/register", registerRouter);
+app.use("/api/login", loginRouter);
+app.use("/api/session", sessionRouter);
 
 // catch 404 and forward to error handler
 app.use(function (req, res, next) {
@@ -57,4 +76,7 @@ app.use(function (err, req, res, next) {
   res.render("error");
 });
 
+app.listen(port, () => {
+  console.log(`Server started on port ${port}`);
+});
 module.exports = app;
