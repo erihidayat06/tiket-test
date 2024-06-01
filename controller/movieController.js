@@ -1,5 +1,9 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const Joi = require("joi");
+const fs = require("fs");
+const path = require("path");
+const movieValidate = require("../model/movie");
 
 let pool = mysql.createPool(config);
 
@@ -21,7 +25,7 @@ const getAll = async (req, res, next) => {
 
     const rows = await new Promise((resolve, reject) => {
       connection.query(
-        "SELECT * FROM tbl_movies WHERE action = false",
+        "SELECT * FROM tbl_movies INNER JOIN tbl_genreses ON tbl_movies.id_genre = tbl_genreses.id_genre WHERE tbl_movies.action = false AND tbl_genreses.action_genre",
         function (err, rows) {
           connection.release();
           if (err) {
@@ -41,6 +45,7 @@ const getAll = async (req, res, next) => {
     }
 
     res.json({
+      status: true,
       movies: rows,
     });
   } catch (err) {
@@ -52,9 +57,37 @@ const getAll = async (req, res, next) => {
   }
 };
 
+// Definisikan skema Joi untuk validasi pengguna
+const movieSchema = movieValidate;
+
 const create = async (req, res) => {
   let connection;
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = movieSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
+
+    const picture = req.file ? req.file.filename : null;
+
+    let {
+      name_film,
+      trailer,
+      deskripsi,
+      durasi,
+      sutradara,
+      rate_age,
+      broadcast_date,
+      end_of_show,
+      id_genre,
+    } = value;
+
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -65,69 +98,6 @@ const create = async (req, res) => {
         }
       });
     });
-
-    let {
-      name_film,
-      picture,
-      trailer,
-      deskripsi,
-      durasi,
-      sutradara,
-      rate_age,
-      broadcast_date,
-      end_of_show,
-      id_genre,
-    } = req.body;
-    let errors = false;
-    let errorMessages = [];
-
-    // Validasi input
-    if (!name_film) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-    if (!picture) {
-      errors = true;
-      errorMessages.push("Masukan picture yang sesuai");
-    }
-    if (!trailer) {
-      errors = true;
-      errorMessages.push("Masukan trailer yang sesuai");
-    }
-    if (!deskripsi) {
-      errors = true;
-      errorMessages.push("Masukan deskripsi yang sesuai");
-    }
-    if (!durasi) {
-      errors = true;
-      errorMessages.push("Masukan durasi yang sesuai");
-    }
-    if (!sutradara) {
-      errors = true;
-      errorMessages.push("Masukan sutradara yang sesuai");
-    }
-    if (!rate_age) {
-      errors = true;
-      errorMessages.push("Masukan rate usia yang sesuai");
-    }
-    if (!broadcast_date) {
-      errors = true;
-      errorMessages.push("Masukan tanggal broadcast yang sesuai");
-    }
-    if (!end_of_show) {
-      errors = true;
-      errorMessages.push("kapan film ini selsai");
-    }
-    if (!id_genre) {
-      errors = true;
-      errorMessages.push("masukan id genre ");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.status(400).json({ errors: errorMessages });
-      return; // Menghentikan eksekusi fungsi
-    }
 
     let formData = {
       name_film: name_film,
@@ -157,8 +127,11 @@ const create = async (req, res) => {
       );
     });
 
-    // Mengirim respons sukses
-    res.json({ data: formData, pesan: "Berhasil Menambah Produk" });
+    res.status(200).json({
+      status: "sukses",
+      data: formData,
+      pesan: "Berhasil Menambah Film",
+    });
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({
@@ -175,6 +148,17 @@ const edit = async (req, res) => {
   let connection;
 
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = movieSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
+
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -185,11 +169,16 @@ const edit = async (req, res) => {
         }
       });
     });
-
     let id = req.params.id;
+
+    const picture_lama = req.body.picture_lama;
+
+    const picture_baru = req.file ? req.file.filename : null;
+
+    const picture = picture_baru ? picture_baru : picture_lama;
+
     let {
       name_film,
-      picture,
       trailer,
       deskripsi,
       durasi,
@@ -198,56 +187,8 @@ const edit = async (req, res) => {
       broadcast_date,
       end_of_show,
       id_genre,
-    } = req.body;
-    let errors = false;
-    let errorMessages = [];
+    } = value;
 
-    console.log(id);
-    if (!name_film) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-    if (!picture) {
-      errors = true;
-      errorMessages.push("Masukan picture yang sesuai");
-    }
-    if (!trailer) {
-      errors = true;
-      errorMessages.push("Masukan trailer yang sesuai");
-    }
-    if (!deskripsi) {
-      errors = true;
-      errorMessages.push("Masukan deskripsi yang sesuai");
-    }
-    if (!durasi) {
-      errors = true;
-      errorMessages.push("Masukan durasi yang sesuai");
-    }
-    if (!sutradara) {
-      errors = true;
-      errorMessages.push("Masukan sutradara yang sesuai");
-    }
-    if (!rate_age) {
-      errors = true;
-      errorMessages.push("Masukan rate usia yang sesuai");
-    }
-    if (!broadcast_date) {
-      errors = true;
-      errorMessages.push("Masukan tanggal broadcast yang sesuai");
-    }
-    if (!end_of_show) {
-      errors = true;
-      errorMessages.push("kapan film ini selsai");
-    }
-    if (!id_genre) {
-      errors = true;
-      errorMessages.push("masukan id genre ");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.json({ errors: errorMessages });
-    }
     let formData = {
       name_film: name_film,
       picture: picture,
@@ -263,18 +204,40 @@ const edit = async (req, res) => {
 
     const result = await new Promise((resolve, reject) => {
       connection.query(
-        "UPDATE tbl_movies SET ? WHERE id_movie =?",
+        "UPDATE tbl_movies SET ? WHERE id_movie = ?",
         [formData, id],
         (err, result) => {
           if (err) {
             reject(err);
           } else {
+            // Menghapus gambar lama jika ada
+            if (picture_lama && picture_lama.length > 0 && picture_baru) {
+              const filePath = path.join(
+                __dirname,
+                "..",
+                "public",
+                "images",
+                picture_lama
+              );
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error("Gagal menghapus gambar lama:", err);
+                } else {
+                  console.log("Gambar lama berhasil dihapus:", filePath);
+                }
+              });
+            }
             resolve(result);
           }
         }
       );
     });
-    res.json({ data: formData, pesan: "Berhasil Edit produk" });
+
+    res.status(200).json({
+      status: true,
+      data: formData,
+      pesan: "Berhasil Edit film",
+    });
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({
@@ -285,6 +248,10 @@ const edit = async (req, res) => {
     // Melepaskan koneksi kembali ke pool
     if (connection) connection.release();
   }
+};
+
+module.exports = {
+  edit,
 };
 
 const destroy = async (req, res) => {
@@ -304,10 +271,6 @@ const destroy = async (req, res) => {
 
     let id = req.params.id;
     let action = true;
-    let errors = false;
-    let errorMessages = [];
-
-    console.log(id);
 
     let formData = {
       action: action,
@@ -326,7 +289,11 @@ const destroy = async (req, res) => {
         }
       );
     });
-    res.json({ data: formData, pesan: "Berhasil hapus produk" });
+    res.status(200).json({
+      startus: "sukses",
+      data: formData,
+      pesan: "Berhasil Menghapus Film",
+    });
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({

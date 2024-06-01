@@ -1,5 +1,6 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const genreValidate = require("../model/genre");
 
 let pool = mysql.createPool(config);
 
@@ -21,7 +22,7 @@ const getAll = async (req, res, next) => {
 
     const rows = await new Promise((resolve, reject) => {
       connection.query(
-        "SELECT * FROM tbl_genreses WHERE action = ?",
+        "SELECT * FROM tbl_genreses WHERE action_genre = ?",
         [0],
         function (err, rows) {
           connection.release();
@@ -41,8 +42,10 @@ const getAll = async (req, res, next) => {
       });
     }
 
-    res.json({
-      sewas: rows,
+    return res.status(200).json({
+      status: true,
+      message: "List Data Posts",
+      data: rows,
     });
   } catch (err) {
     console.error("Error:", err);
@@ -53,9 +56,22 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const gendreSchema = genreValidate;
+
 const create = async (req, res) => {
   let connection;
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = gendreSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
+
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -67,21 +83,7 @@ const create = async (req, res) => {
       });
     });
 
-    let { name_genre } = req.body;
-    let errors = false;
-    let errorMessages = [];
-
-    // Validasi input
-    if (!name_genre) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.status(400).json({ errors: errorMessages });
-      return; // Menghentikan eksekusi fungsi
-    }
+    let { name_genre } = value;
 
     let formData = {
       name_genre: name_genre,
@@ -192,19 +194,17 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action = true;
-    let errors = false;
-    let errorMessages = [];
+    let action_genre = true;
 
     console.log(id);
 
     let formData = {
-      action: action,
+      action_genre: action_genre,
     };
 
     const result = await new Promise((resolve, reject) => {
       connection.query(
-        "UPDATE tbl_genreses SET ? WHERE id_genre =?",
+        "UPDATE tbl_genreses SET ? WHERE id_genre = ?",
         [formData, id],
         (err, result) => {
           if (err) {
