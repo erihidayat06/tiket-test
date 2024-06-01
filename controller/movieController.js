@@ -25,7 +25,7 @@ const getAll = async (req, res, next) => {
 
     const rows = await new Promise((resolve, reject) => {
       connection.query(
-        "SELECT * FROM tbl_movies INNER JOIN tbl_genreses ON tbl_movies.id_genre = tbl_genreses.id_genre WHERE tbl_movies.action = false AND tbl_genreses.action_genre",
+        "SELECT * FROM tbl_movies INNER JOIN tbl_genreses ON tbl_movies.id_genre = tbl_genreses.id_genre WHERE tbl_movies.archived = false AND tbl_genreses.archived_genre",
         function (err, rows) {
           connection.release();
           if (err) {
@@ -216,7 +216,7 @@ const edit = async (req, res) => {
                 __dirname,
                 "..",
                 "public",
-                "images",
+                "uploads",
                 picture_lama
               );
               fs.unlink(filePath, (err) => {
@@ -270,10 +270,10 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action = true;
+    let archived = true;
 
     let formData = {
-      action: action,
+      archived: archived,
     };
 
     const result = await new Promise((resolve, reject) => {

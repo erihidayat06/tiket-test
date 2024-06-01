@@ -1,5 +1,6 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const promotionValidate = require("../model/promotion");
 
 let pool = mysql.createPool(config);
 
@@ -20,14 +21,18 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_promotions WHERE action = ?", [0], function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_promotions WHERE archived = ?",
+        [0],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -49,8 +54,19 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const promotionSchema = promotionValidate;
 const create = async (req, res) => {
   let connection;
+  // Validasi body permintaan terhadap skema
+  const { error, value } = promotionSchema.validate(req.body, {
+    abortEarly: false,
+  });
+
+  if (error) {
+    // Kumpulkan semua kesalahan validasi
+    const validationErrors = error.details.map((detail) => detail.message);
+    return res.status(400).json({ errors: validationErrors });
+  }
   try {
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
@@ -63,29 +79,7 @@ const create = async (req, res) => {
       });
     });
 
-    let { title, image, fill } = req.body;
-    let errors = false;
-    let errorMessages = [];
-
-    // Validasi input
-    if (!title) {
-      errors = true;
-      errorMessages.push("Promo apa ni?");
-    }
-    if (!image) {
-      errors = true;
-      errorMessages.push("gambarnya yang sesuai lah");
-    }
-    if (!fill) {
-      errors = true;
-      errorMessages.push("fill nya apee?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.status(400).json({ errors: errorMessages });
-      return; // Menghentikan eksekusi fungsi
-    }
+    let { title, image, fill } = value;
 
     let formData = {
       title: title,
@@ -95,13 +89,17 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query("INSERT INTO tbl_promotions SET ?", formData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "INSERT INTO tbl_promotions SET ?",
+        formData,
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
 
     // Mengirim respons sukses
@@ -120,8 +118,17 @@ const create = async (req, res) => {
 
 const edit = async (req, res) => {
   let connection;
-
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = promotionSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -134,29 +141,8 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { title, image, fill } = req.body;
-    let errors = false;
-    let errorMessages = [];
+    let { title, image, fill } = value;
 
-    console.log(id);
-
-    if (!title) {
-      errors = true;
-      errorMessages.push("Promo apa ni?");
-    }
-    if (!image) {
-      errors = true;
-      errorMessages.push("gambarnya yang sesuai lah");
-    }
-    if (!fill) {
-      errors = true;
-      errorMessages.push("fill nya apee?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.json({ errors: errorMessages });
-    }
     let formData = {
       title: title,
       image: image,
@@ -164,13 +150,17 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_promotions SET ? WHERE id_promo =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_promotions SET ? WHERE id_promo =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil Edit Promo" });
   } catch (err) {
@@ -201,24 +191,24 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action = true;
-    let errors = false;
-    let errorMessages = [];
-
-    console.log(id);
+    let archived = true;
 
     let formData = {
-      action: action,
+      archived: archived,
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_promotions SET ? WHERE id_promo =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_promotions SET ? WHERE id_promo =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil hapus promo" });
   } catch (err) {

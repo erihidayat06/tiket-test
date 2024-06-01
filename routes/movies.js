@@ -8,7 +8,7 @@ var movie = require("../controller/movieController");
 // Configure storage options for multer
 const storage = multer.diskStorage({
   destination: function (req, file, cb) {
-    cb(null, "./public/images"); // Ensure this folder exists or create it
+    cb(null, "./public/uploads"); // Ensure this folder exists or create it
   },
   filename: function (req, file, cb) {
     const sanitizedFilename = sanitizeFilename(file.originalname);

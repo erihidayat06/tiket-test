@@ -49,11 +49,11 @@ app.use(
 app.use("/", indexRouter);
 app.use("/api/movie", movieRouter);
 app.use("/api/gendre", gendreRouter);
-app.use("/actor", actorRouter);
-app.use("/vote", voteRouter);
-app.use("/promotion", promotionRouter);
-app.use("/picture", pictureRouter);
-app.use("/time", timeRouter);
+app.use("/api/actor", actorRouter);
+app.use("/api/vote", voteRouter);
+app.use("/api/promotion", promotionRouter);
+app.use("/api/picture", pictureRouter);
+app.use("/api/time", timeRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/transaction", transactionRouter);
 app.use("/api/register", registerRouter);

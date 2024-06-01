@@ -1,5 +1,6 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const pictureValidate = require("../model/picture");
 
 let pool = mysql.createPool(config);
 
@@ -20,14 +21,18 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_pictures WHERE action = ?", [0], function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_pictures WHERE archived = ?",
+        [0],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -49,9 +54,22 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const pictureSchema = pictureValidate;
+
 const create = async (req, res) => {
   let connection;
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = pictureSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
+
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -63,29 +81,7 @@ const create = async (req, res) => {
       });
     });
 
-    let { name_pictures, picture, id_movie } = req.body;
-    let errors = false;
-    let errorMessages = [];
-
-    // Validasi input
-    if (!name_pictures) {
-      errors = true;
-      errorMessages.push("nama foto ini apa");
-    }
-    if (!picture) {
-      errors = true;
-      errorMessages.push("fotoaapa");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.status(400).json({ errors: errorMessages });
-      return; // Menghentikan eksekusi fungsi
-    }
+    let { name_pictures, picture, id_movie } = value;
 
     let formData = {
       name_pictures: name_pictures,
@@ -95,13 +91,17 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query("INSERT INTO tbl_pictures SET ?", formData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "INSERT INTO tbl_pictures SET ?",
+        formData,
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
 
     // Mengirim respons sukses
@@ -122,6 +122,17 @@ const edit = async (req, res) => {
   let connection;
 
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = pictureSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
+
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -134,29 +145,8 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { name_pictures, picture, id_movie } = req.body;
-    let errors = false;
-    let errorMessages = [];
+    let { name_pictures, picture, id_movie } = value;
 
-    console.log(id);
-
-    if (!name_pictures) {
-      errors = true;
-      errorMessages.push("nama foto ini apa");
-    }
-    if (!picture) {
-      errors = true;
-      errorMessages.push("fotoaapa");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.json({ errors: errorMessages });
-    }
     let formData = {
       name_pictures: name_pictures,
       picture: picture,
@@ -164,13 +154,17 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_pictures SET ? WHERE id_picture =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_pictures SET ? WHERE id_picture =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil Edit Picture" });
   } catch (err) {
@@ -200,24 +194,26 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action = true;
-    let errors = false;
-    let errorMessages = [];
+    let archived = true;
 
     console.log(id);
 
     let formData = {
-      action: action,
+      archived: archived,
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_pictures SET ? WHERE id_picture =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_pictures SET ? WHERE id_picture =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil Hapus Picture" });
   } catch (err) {

@@ -1,5 +1,6 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const voteValidate = require("../model/vote");
 
 let pool = mysql.createPool(config);
 
@@ -20,14 +21,18 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_votes WHERE action = ?", [0], function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_votes WHERE archived = ?",
+        [0],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -49,9 +54,20 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const voteSchema = voteValidate;
 const create = async (req, res) => {
   let connection;
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = voteSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -63,33 +79,7 @@ const create = async (req, res) => {
       });
     });
 
-    let { rating, comment, id_movie, id_user } = req.body;
-    let errors = false;
-    let errorMessages = [];
-
-    // Validasi input
-    if (!rating) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-    if (!comment) {
-      errors = true;
-      errorMessages.push("Woy lu cast apa?");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-    if (!id_user) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.status(400).json({ errors: errorMessages });
-      return; // Menghentikan eksekusi fungsi
-    }
+    let { rating, comment, id_movie, id_user } = value;
 
     let formData = {
       rating: rating,
@@ -100,13 +90,17 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query("INSERT INTO tbl_votes SET ?", formData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "INSERT INTO tbl_votes SET ?",
+        formData,
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
 
     // Mengirim respons sukses
@@ -125,7 +119,16 @@ const create = async (req, res) => {
 
 const edit = async (req, res) => {
   let connection;
+  // Validasi body permintaan terhadap skema
+  const { error, value } = voteSchema.validate(req.body, {
+    abortEarly: false,
+  });
 
+  if (error) {
+    // Kumpulkan semua kesalahan validasi
+    const validationErrors = error.details.map((detail) => detail.message);
+    return res.status(400).json({ errors: validationErrors });
+  }
   try {
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
@@ -139,33 +142,8 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { rating, comment, id_movie, id_user } = req.body;
-    let errors = false;
-    let errorMessages = [];
+    let { rating, comment, id_movie, id_user } = value;
 
-    console.log(id);
-
-    if (!rating) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-    if (!comment) {
-      errors = true;
-      errorMessages.push("Woy lu cast apa?");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-    if (!id_user) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.json({ errors: errorMessages });
-    }
     let formData = {
       rating: rating,
       comment: comment,
@@ -174,13 +152,17 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_votes SET ? WHERE id_vote =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_votes SET ? WHERE id_vote =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil Edit vote" });
   } catch (err) {
@@ -211,24 +193,24 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action = true;
-    let errors = false;
-    let errorMessages = [];
-
-    console.log(id);
+    let archived = true;
 
     let formData = {
-      action: action,
+      archived: archived,
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_votes SET ? WHERE id_vote =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_votes SET ? WHERE id_vote =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil hapus produk" });
   } catch (err) {
