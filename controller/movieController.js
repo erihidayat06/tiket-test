@@ -20,14 +20,17 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_movies WHERE action = false", function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_movies WHERE action = false",
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -63,7 +66,18 @@ const create = async (req, res) => {
       });
     });
 
-    let { name_film, picture, trailer, deskripsi, durasi, sutradara, rate_age, broadcast_date, end_of_show, id_genre } = req.body;
+    let {
+      name_film,
+      picture,
+      trailer,
+      deskripsi,
+      durasi,
+      sutradara,
+      rate_age,
+      broadcast_date,
+      end_of_show,
+      id_genre,
+    } = req.body;
     let errors = false;
     let errorMessages = [];
 
@@ -130,13 +144,17 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query("INSERT INTO tbl_movies SET ?", formData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "INSERT INTO tbl_movies SET ?",
+        formData,
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
 
     // Mengirim respons sukses
@@ -169,7 +187,18 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { name_film, picture, trailer, deskripsi, durasi, sutradara, rate_age, broadcast_date, end_of_show, id_genre } = req.body;
+    let {
+      name_film,
+      picture,
+      trailer,
+      deskripsi,
+      durasi,
+      sutradara,
+      rate_age,
+      broadcast_date,
+      end_of_show,
+      id_genre,
+    } = req.body;
     let errors = false;
     let errorMessages = [];
 
@@ -233,13 +262,17 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_movies SET ? WHERE id_movie =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_movies SET ? WHERE id_movie =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil Edit produk" });
   } catch (err) {
@@ -281,13 +314,17 @@ const destroy = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_movies SET ? WHERE id_movie =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_movies SET ? WHERE id_movie =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil hapus produk" });
   } catch (err) {
