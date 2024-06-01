@@ -22,7 +22,7 @@ const getAll = async (req, res, next) => {
 
     const rows = await new Promise((resolve, reject) => {
       connection.query(
-        "SELECT * FROM tbl_genreses WHERE action_genre = ?",
+        "SELECT * FROM tbl_genreses WHERE archived_genre = ?",
         [0],
         function (err, rows) {
           connection.release();
@@ -194,12 +194,12 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action_genre = true;
+    let archived_genre = true;
 
     console.log(id);
 
     let formData = {
-      action_genre: action_genre,
+      archived_genre: archived_genre,
     };
 
     const result = await new Promise((resolve, reject) => {

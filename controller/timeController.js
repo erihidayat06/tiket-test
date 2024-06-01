@@ -1,5 +1,6 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const timeValidate = require("../model/time");
 
 let pool = mysql.createPool(config);
 
@@ -20,14 +21,18 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_times WHERE action = ?", [0], function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_times WHERE archived = ?",
+        [0],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -49,9 +54,21 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const timeSchema = timeValidate;
+
 const create = async (req, res) => {
   let connection;
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = timeSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -63,33 +80,7 @@ const create = async (req, res) => {
       });
     });
 
-    let { dated, hour, price, id_movie } = req.body;
-    let errors = false;
-    let errorMessages = [];
-
-    // Validasi input
-    if (!dated) {
-      errors = true;
-      errorMessages.push("tanggal brapa");
-    }
-    if (!hour) {
-      errors = true;
-      errorMessages.push("jam berapa");
-    }
-    if (!price) {
-      errors = true;
-      errorMessages.push("berapa harganya");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.status(400).json({ errors: errorMessages });
-      return; // Menghentikan eksekusi fungsi
-    }
+    let { dated, hour, price, id_movie } = value;
 
     let formData = {
       dated: dated,
@@ -100,13 +91,17 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query("INSERT INTO tbl_times SET ?", formData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "INSERT INTO tbl_times SET ?",
+        formData,
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
 
     // Mengirim respons sukses
@@ -127,6 +122,16 @@ const edit = async (req, res) => {
   let connection;
 
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = timeSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -139,33 +144,8 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { dated, hour, price, id_movie } = req.body;
-    let errors = false;
-    let errorMessages = [];
+    let { dated, hour, price, id_movie } = value;
 
-    console.log(id);
-
-    if (!dated) {
-      errors = true;
-      errorMessages.push("tanggal brapa");
-    }
-    if (!hour) {
-      errors = true;
-      errorMessages.push("jam berapa");
-    }
-    if (!price) {
-      errors = true;
-      errorMessages.push("berapa harganya");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.json({ errors: errorMessages });
-    }
     let formData = {
       dated: dated,
       hour: hour,
@@ -174,13 +154,17 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_times SET ? WHERE id_time =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_times SET ? WHERE id_time =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil Edit Waktu" });
   } catch (err) {
@@ -211,24 +195,24 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action = true;
-    let errors = false;
-    let errorMessages = [];
-
-    console.log(id);
+    let archived = true;
 
     let formData = {
-      action: action,
+      archived: archived,
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_times SET ? WHERE id_time =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_times SET ? WHERE id_time =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil hapus waktu" });
   } catch (err) {

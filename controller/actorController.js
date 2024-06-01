@@ -1,5 +1,6 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const actorValidate = require("../model/actor");
 
 let pool = mysql.createPool(config);
 
@@ -20,14 +21,18 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_actors WHERE action = ?", [0], function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_actors WHERE archived = ?",
+        [0],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -49,9 +54,22 @@ const getAll = async (req, res, next) => {
   }
 };
 
+const actorSchema = actorValidate;
+
 const create = async (req, res) => {
   let connection;
   try {
+    // Validasi body permintaan terhadap skema
+    const { error, value } = actorSchema.validate(req.body, {
+      abortEarly: false,
+    });
+
+    if (error) {
+      // Kumpulkan semua kesalahan validasi
+      const validationErrors = error.details.map((detail) => detail.message);
+      return res.status(400).json({ errors: validationErrors });
+    }
+
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
@@ -63,29 +81,7 @@ const create = async (req, res) => {
       });
     });
 
-    let { name_actor, cast, id_movie } = req.body;
-    let errors = false;
-    let errorMessages = [];
-
-    // Validasi input
-    if (!name_actor) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-    if (!cast) {
-      errors = true;
-      errorMessages.push("Woy lu cast apa?");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("movie lu  apa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.status(400).json({ errors: errorMessages });
-      return; // Menghentikan eksekusi fungsi
-    }
+    let { name_actor, cast, id_movie } = value;
 
     let formData = {
       name_actor: name_actor,
@@ -95,13 +91,17 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query("INSERT INTO tbl_actors SET ?", formData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "INSERT INTO tbl_actors SET ?",
+        formData,
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
 
     // Mengirim respons sukses
@@ -120,7 +120,16 @@ const create = async (req, res) => {
 
 const edit = async (req, res) => {
   let connection;
+  // Validasi body permintaan terhadap skema
+  const { error, value } = actorSchema.validate(req.body, {
+    abortEarly: false,
+  });
 
+  if (error) {
+    // Kumpulkan semua kesalahan validasi
+    const validationErrors = error.details.map((detail) => detail.message);
+    return res.status(400).json({ errors: validationErrors });
+  }
   try {
     // Mendapatkan koneksi dari pool
     connection = await new Promise((resolve, reject) => {
@@ -134,29 +143,8 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { name_actor, cast, id_movie } = req.body;
-    let errors = false;
-    let errorMessages = [];
+    let { name_actor, cast, id_movie } = value;
 
-    console.log(id);
-
-    if (!name_actor) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-    if (!cast) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-    if (!id_movie) {
-      errors = true;
-      errorMessages.push("Woy nama lu siapa?");
-    }
-
-    if (errors) {
-      // Jika ada kesalahan, kirim kembali halaman formulir dengan pesan kesalahan
-      res.json({ errors: errorMessages });
-    }
     let formData = {
       name_actor: name_actor,
       cast: cast,
@@ -164,15 +152,19 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_actors SET ? WHERE id_actor =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_actors SET ? WHERE id_actor =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
-    res.json({ data: formData, pesan: "Berhasil Edit produk" });
+    res.json({ data: formData, pesan: "Berhasil Edit Actor" });
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({
@@ -201,26 +193,26 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let action = true;
-    let errors = false;
-    let errorMessages = [];
-
-    console.log(id);
+    let archived = true;
 
     let formData = {
-      action: action,
+      archived: archived,
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_actors SET ? WHERE id_actor =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_actors SET ? WHERE id_actor =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
-    res.json({ data: formData, pesan: "Berhasil hapus produk" });
+    res.json({ data: formData, pesan: "Berhasil hapus Actor" });
   } catch (err) {
     console.error("Error:", err);
     res.status(500).json({
