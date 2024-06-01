@@ -15,6 +15,12 @@ var movieRouter = require("./routes/movies");
 
 var sessionRouter = require("./routes/session");
 var gendreRouter = require("./routes/gendre");
+var actorRouter = require("./routes/actor");
+var voteRouter = require("./routes/vote");
+var promotionRouter = require("./routes/promotion");
+var pictureRouter = require("./routes/picture");
+var timeRouter = require("./routes/time");
+
 var indexRouter = require("./routes/index");
 var usersRouter = require("./routes/users");
 var transactionRouter = require("./routes/transaction");
@@ -41,11 +47,13 @@ app.use(
 );
 
 app.use("/", indexRouter);
-
 app.use("/api/movie", movieRouter);
-
 app.use("/api/gendre", gendreRouter);
-
+app.use("/actor", actorRouter);
+app.use("/vote", voteRouter);
+app.use("/promotion", promotionRouter);
+app.use("/picture", pictureRouter);
+app.use("/time", timeRouter);
 app.use("/api/users", usersRouter);
 app.use("/api/transaction", transactionRouter);
 app.use("/api/register", registerRouter);
