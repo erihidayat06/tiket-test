@@ -11,6 +11,18 @@ pool.on("error", (err) => {
   console.error(err);
 });
 
+// Fungsi untuk menghapus file
+const removeFile = (filepath) => {
+  console.log(`Trying to delete file: ${filepath}`); // Tambahkan log untuk debugging
+  fs.unlink(filepath, (err) => {
+    if (err) {
+      console.error(`Failed to delete file: ${filepath}`, err);
+    } else {
+      console.log(`File deleted: ${filepath}`);
+    }
+  });
+};
+
 const getAll = async (req, res, next) => {
   try {
     const connection = await new Promise((resolve, reject) => {
@@ -64,18 +76,29 @@ const movieSchema = movieValidate;
 const create = async (req, res) => {
   let connection;
   try {
+    const picture = req.file ? req.file.filename : null;
+
     // Validasi body permintaan terhadap skema
     const { error, value } = movieSchema.validate(req.body, {
       abortEarly: false,
     });
 
     if (error) {
+      // Hapus file jika ada kesalahan validasi
+      if (picture) {
+        const picturePath = path.resolve(
+          __dirname,
+          "..",
+          "public",
+          "uploads",
+          picture
+        );
+        removeFile(picturePath);
+      }
       // Kumpulkan semua kesalahan validasi
       const validationErrors = error.details.map((detail) => detail.message);
       return res.status(400).json({ errors: validationErrors });
     }
-
-    const picture = req.file ? req.file.filename : null;
 
     let {
       name_film,
@@ -149,12 +172,30 @@ const edit = async (req, res) => {
   let connection;
 
   try {
+    // Data picture
+    const picture_lama = req.body.picture_lama;
+
+    const picture_baru = req.file ? req.file.filename : null;
+
+    const picture = picture_baru ? picture_baru : picture_lama;
+
     // Validasi body permintaan terhadap skema
     const { error, value } = movieSchema.validate(req.body, {
       abortEarly: false,
     });
 
     if (error) {
+      // Hapus file jika ada kesalahan validasi
+      if (picture_baru) {
+        const picturePath = path.resolve(
+          __dirname,
+          "..",
+          "public",
+          "uploads",
+          picture_baru
+        );
+        removeFile(picturePath);
+      }
       // Kumpulkan semua kesalahan validasi
       const validationErrors = error.details.map((detail) => detail.message);
       return res.status(400).json({ errors: validationErrors });
@@ -171,12 +212,6 @@ const edit = async (req, res) => {
       });
     });
     let id = req.params.id;
-
-    const picture_lama = req.body.picture_lama;
-
-    const picture_baru = req.file ? req.file.filename : null;
-
-    const picture = picture_baru ? picture_baru : picture_lama;
 
     let {
       name_film,

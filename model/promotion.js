@@ -5,7 +5,8 @@ const promotionValidate = Joi.object({
     "string.max": "Judul Tidak boleh lebih dari 100 karakter",
     "any.required": "Judul tidak boleh kosong",
   }),
-  image: Joi.string(),
+  picture: Joi.string(),
+  picture_lama: Joi.string(),
   fill: Joi.string(),
 });
 

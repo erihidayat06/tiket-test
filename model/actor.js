@@ -10,6 +10,7 @@ const actorValidate = Joi.object({
     "any.required": "Silahkan Tulis Nama Peran",
   }),
   id_movie: Joi.number(),
+  picture_lama: Joi.string(),
 });
 
 module.exports = actorValidate;

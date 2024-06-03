@@ -6,8 +6,8 @@ const { verifyToken, checkRole } = require("../controller/loginController");
 
 /* GET home page. */
 router.get("/", gendre.getAll);
-router.post("/create", gendre.create);
-router.post("/edit/:id", gendre.edit);
-router.post("/delete/:id", verifyToken, gendre.destroy);
+router.post("/create", verifyToken, checkRole("admin"), gendre.create);
+router.post("/edit/:id", verifyToken, checkRole("admin"), gendre.edit);
+router.post("/delete/:id", verifyToken, checkRole("admin"), gendre.destroy);
 
 module.exports = router;
