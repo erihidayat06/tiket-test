@@ -6,6 +6,7 @@ const pictureValidate = Joi.object({
     "any.required": "Nama picture tidak boleh kosong",
   }),
   picture: Joi.string(),
+  picture_lama: Joi.string(),
   id_movie: Joi.number().required().messages({
     "any.required": "movie tidak boleh kosong",
   }),

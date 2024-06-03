@@ -1,5 +1,7 @@
 const config = require("../library/database");
 let mysql = require("mysql");
+const fs = require("fs");
+const path = require("path");
 const pictureValidate = require("../model/picture");
 
 let pool = mysql.createPool(config);
@@ -7,6 +9,18 @@ let pool = mysql.createPool(config);
 pool.on("error", (err) => {
   console.error(err);
 });
+
+// Fungsi untuk menghapus file
+const removeFile = (filepath) => {
+  console.log(`Trying to delete file: ${filepath}`); // Tambahkan log untuk debugging
+  fs.unlink(filepath, (err) => {
+    if (err) {
+      console.error(`Failed to delete file: ${filepath}`, err);
+    } else {
+      console.log(`File deleted: ${filepath}`);
+    }
+  });
+};
 
 const getAll = async (req, res, next) => {
   try {
@@ -58,15 +72,28 @@ const getAll = async (req, res, next) => {
 
 const pictureSchema = pictureValidate;
 
+// Create
 const create = async (req, res) => {
   let connection;
   try {
+    const picture = req.file ? req.file.filename : null;
     // Validasi body permintaan terhadap skema
     const { error, value } = pictureSchema.validate(req.body, {
       abortEarly: false,
     });
 
     if (error) {
+      // Hapus file jika ada kesalahan validasi
+      if (picture) {
+        const picturePath = path.resolve(
+          __dirname,
+          "..",
+          "public",
+          "uploads",
+          picture
+        );
+        removeFile(picturePath);
+      }
       // Kumpulkan semua kesalahan validasi
       const validationErrors = error.details.map((detail) => detail.message);
       return res.status(400).json({ errors: validationErrors });
@@ -83,7 +110,7 @@ const create = async (req, res) => {
       });
     });
 
-    let { name_pictures, picture, id_movie } = value;
+    let { name_pictures, id_movie } = value;
 
     let formData = {
       name_pictures: name_pictures,
@@ -120,16 +147,35 @@ const create = async (req, res) => {
   }
 };
 
+// Edit
+
 const edit = async (req, res) => {
   let connection;
 
   try {
+    const picture_lama = req.body.picture_lama;
+
+    const picture_baru = req.file ? req.file.filename : null;
+
+    const picture = picture_baru ? picture_baru : picture_lama;
+
     // Validasi body permintaan terhadap skema
     const { error, value } = pictureSchema.validate(req.body, {
       abortEarly: false,
     });
 
     if (error) {
+      // Hapus file jika ada kesalahan validasi
+      if (picture_baru) {
+        const picturePath = path.resolve(
+          __dirname,
+          "..",
+          "public",
+          "uploads",
+          picture_baru
+        );
+        removeFile(picturePath);
+      }
       // Kumpulkan semua kesalahan validasi
       const validationErrors = error.details.map((detail) => detail.message);
       return res.status(400).json({ errors: validationErrors });
@@ -147,7 +193,7 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { name_pictures, picture, id_movie } = value;
+    let { name_pictures, id_movie } = value;
 
     let formData = {
       name_pictures: name_pictures,
@@ -163,6 +209,23 @@ const edit = async (req, res) => {
           if (err) {
             reject(err);
           } else {
+            // Menghapus gambar lama jika ada
+            if (picture_lama && picture_lama.length > 0 && picture_baru) {
+              const filePath = path.join(
+                __dirname,
+                "..",
+                "public",
+                "uploads",
+                picture_lama
+              );
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error("Gagal menghapus gambar lama:", err);
+                } else {
+                  console.log("Gambar lama berhasil dihapus:", filePath);
+                }
+              });
+            }
             resolve(result);
           }
         }

@@ -4,6 +4,7 @@ const multer = require("multer");
 const path = require("path");
 const sanitizeFilename = require("sanitize-filename");
 var movie = require("../controller/movieController");
+const { checkRole, verifyToken } = require("../controller/loginController");
 
 // Configure storage options for multer
 const storage = multer.diskStorage({
@@ -40,8 +41,20 @@ const upload = multer({
 
 /* GET home page. */
 router.get("/", movie.getAll);
-router.post("/create", upload.single("picture"), movie.create);
-router.post("/edit/:id", upload.single("picture"), movie.edit);
+router.post(
+  "/create",
+  upload.single("picture"),
+  verifyToken,
+  checkRole("admin"),
+  movie.create
+);
+router.post(
+  "/edit/:id",
+  upload.single("picture"),
+  verifyToken,
+  checkRole("admin"),
+  movie.edit
+);
 router.post("/delete/:id", movie.destroy);
 
 module.exports = router;
