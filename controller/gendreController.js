@@ -56,6 +56,57 @@ const getAll = async (req, res, next) => {
   }
 };
 
+// Get ID
+const getById = async (req, res, next) => {
+  try {
+    const connection = await new Promise((resolve, reject) => {
+      pool.getConnection((err, connection) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(connection);
+        }
+      });
+    });
+
+    const id = req.params.id;
+
+    const rows = await new Promise((resolve, reject) => {
+      connection.query(
+        "SELECT * FROM tbl_genreses WHERE id_genre = ?",
+        [id],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        error: "Not Found",
+        message: "No record found with the given ID",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "List Data Posts",
+      gendre: rows,
+    });
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "An error occurred while processing your request",
+    });
+  }
+};
+
 const gendreSchema = genreValidate;
 
 const create = async (req, res) => {
@@ -230,6 +281,7 @@ const destroy = async (req, res) => {
 
 module.exports = {
   getAll,
+  getById,
   create,
   edit,
   destroy,

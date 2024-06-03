@@ -41,6 +41,7 @@ const upload = multer({
 
 /* GET home page. */
 router.get("/", movie.getAll);
+router.get("/:id", movie.getById);
 router.post(
   "/create",
   upload.single("picture"),

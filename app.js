@@ -14,7 +14,7 @@ const port = 5000;
 var movieRouter = require("./routes/movies");
 
 var sessionRouter = require("./routes/session");
-var gendreRouter = require("./routes/gendre");
+var genreRouter = require("./routes/genre");
 var actorRouter = require("./routes/actor");
 var voteRouter = require("./routes/vote");
 var promotionRouter = require("./routes/promotion");
@@ -48,7 +48,7 @@ app.use(
 
 app.use("/", indexRouter);
 app.use("/api/movie", movieRouter);
-app.use("/api/gendre", gendreRouter);
+app.use("/api/genre", genreRouter);
 app.use("/api/actor", actorRouter);
 app.use("/api/vote", voteRouter);
 app.use("/api/promotion", promotionRouter);
