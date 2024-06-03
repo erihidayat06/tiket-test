@@ -21,18 +21,14 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query(
-        "SELECT * FROM tbl_times WHERE archived = ?",
-        [0],
-        function (err, rows) {
-          connection.release();
-          if (err) {
-            reject(err);
-          } else {
-            resolve(rows);
-          }
+      connection.query("SELECT * FROM tbl_times WHERE archived = ?", [0], function (err, rows) {
+        connection.release();
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
         }
-      );
+      });
     });
 
     if (rows.length === 0) {
@@ -46,6 +42,52 @@ const getAll = async (req, res, next) => {
       status: true,
       message: "List Data Posts",
       times: rows,
+    });
+  } catch (err) {
+    console.error("Error:", err);
+    return res.status(500).json({
+      error: "Internal Server Error",
+      message: "An error occurred while processing your request",
+    });
+  }
+};
+
+const getById = async (req, res, next) => {
+  try {
+    const connection = await new Promise((resolve, reject) => {
+      pool.getConnection((err, connection) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(connection);
+        }
+      });
+    });
+
+    const id = req.params.id;
+
+    const rows = await new Promise((resolve, reject) => {
+      connection.query("SELECT * FROM tbl_times WHERE id_time = ?", [id], function (err, rows) {
+        connection.release();
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        error: "Not Found",
+        message: "No record found with the given ID",
+      });
+    }
+
+    return res.status(200).json({
+      status: true,
+      message: "List Data Time",
+      time: rows,
     });
   } catch (err) {
     console.error("Error:", err);
@@ -93,17 +135,13 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query(
-        "INSERT INTO tbl_times SET ?",
-        formData,
-        (err, result) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(result);
-          }
+      connection.query("INSERT INTO tbl_times SET ?", formData, (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
         }
-      );
+      });
     });
 
     // Mengirim respons sukses
@@ -156,17 +194,13 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query(
-        "UPDATE tbl_times SET ? WHERE id_time =?",
-        [formData, id],
-        (err, result) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(result);
-          }
+      connection.query("UPDATE tbl_times SET ? WHERE id_time =?", [formData, id], (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
         }
-      );
+      });
     });
     res.json({ data: formData, pesan: "Berhasil Edit Waktu" });
   } catch (err) {
@@ -204,17 +238,13 @@ const destroy = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query(
-        "UPDATE tbl_times SET ? WHERE id_time =?",
-        [formData, id],
-        (err, result) => {
-          if (err) {
-            reject(err);
-          } else {
-            resolve(result);
-          }
+      connection.query("UPDATE tbl_times SET ? WHERE id_time =?", [formData, id], (err, result) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(result);
         }
-      );
+      });
     });
     res.json({ data: formData, pesan: "Berhasil hapus waktu" });
   } catch (err) {
@@ -231,6 +261,7 @@ const destroy = async (req, res) => {
 
 module.exports = {
   getAll,
+  getById,
   create,
   edit,
   destroy,
