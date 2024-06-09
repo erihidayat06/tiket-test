@@ -1,4 +1,5 @@
 const Joi = require("joi");
+const { password } = require("../library/database");
 
 const loginValidate = Joi.object({
   email: Joi.string()
@@ -8,6 +9,7 @@ const loginValidate = Joi.object({
       "string.email": "Email tidak valid.",
       "any.required": "Email wajib diisi.",
     }),
+  password: Joi.string(),
 });
 
 module.exports = loginValidate;

@@ -1,65 +1,44 @@
 const config = require("../library/database");
-let mysql = require("mysql");
-var bcrypt = require("bcrypt");
-const Joi = require("joi");
-let pool = mysql.createPool(config);
+const mysql = require("mysql");
+const crypto = require("crypto");
+
+const pool = mysql.createPool(config);
 
 pool.on("error", (err) => {
   console.error(err);
 });
 
-// Definisikan skema Joi untuk validasi pengguna
-const userSchema = Joi.object({
-  username: Joi.string().alphanum().min(3).max(30).required().messages({
-    "string.alphanum": "Username hanya boleh berisi karakter alfanumerik.",
-    "string.min": "Username harus terdiri dari setidaknya 3 karakter.",
-    "string.max": "Username tidak boleh lebih dari 30 karakter.",
-    "any.required": "Username wajib diisi.",
-  }),
-  no_telp: Joi.string()
-    .pattern(/^[0-9]+$/)
-    .min(10)
-    .max(15)
-    .required()
-    .messages({
-      "string.pattern.base": "Nomor telepon hanya boleh berisi angka.",
-      "string.min": "Nomor telepon harus terdiri dari setidaknya 10 digit.",
-      "string.max": "Nomor telepon tidak boleh lebih dari 15 digit.",
-      "any.required": "Nomor telepon wajib diisi.",
-    }),
-  email: Joi.string()
-    .email({ tlds: { allow: false } })
-    .required()
-    .messages({
-      "string.email": "Email tidak valid.",
-      "any.required": "Email wajib diisi.",
-    }),
-  password: Joi.string().min(6).required().messages({
-    "string.min": "Password harus terdiri dari setidaknya 6 karakter.",
-    "any.required": "Password wajib diisi.",
-  }),
-  role: Joi.string().valid("admin", "user", "guest").required().messages({
-    "any.only": "Role harus salah satu dari 'admin', 'user', 'guest'.",
-    "any.required": "Role wajib diisi.",
-  }),
-});
+const validateUser = (body) => {
+  const errors = [];
+  if (!body.username || typeof body.username !== "string") {
+    errors.push("Username diperlukan dan harus berupa string.");
+  }
+  if (!body.no_telp || typeof body.no_telp !== "string") {
+    errors.push("Nomor telepon diperlukan dan harus berupa string.");
+  }
+  if (!body.email || typeof body.email !== "string") {
+    errors.push("Email diperlukan dan harus berupa string.");
+  }
+  if (!body.password || typeof body.password !== "string") {
+    errors.push("Password diperlukan dan harus berupa string.");
+  }
+  if (!body.role || typeof body.role !== "string") {
+    errors.push("Role diperlukan dan harus berupa string.");
+  }
+  return errors;
+};
 
 const saveUser = async (req, res) => {
-  let connection; // Definisikan variabel koneksi di awal fungsi
+  let connection;
 
   try {
-    // Validasi body permintaan terhadap skema
-    const { error, value } = userSchema.validate(req.body, {
-      abortEarly: false,
-    });
+    const validationErrors = validateUser(req.body);
 
-    if (error) {
-      // Kumpulkan semua kesalahan validasi
-      const validationErrors = error.details.map((detail) => detail.message);
+    if (validationErrors.length > 0) {
       return res.status(400).json({ errors: validationErrors });
     }
 
-    const { username, no_telp, email, password, role } = value;
+    const { username, no_telp, email, password, role } = req.body;
 
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, conn) => {
@@ -89,10 +68,13 @@ const saveUser = async (req, res) => {
     if (userExists) {
       res.status(400).json({ message: "Username atau email sudah ada" });
     } else {
-      // Hash password sebelum menyimpan
-      let hashedPassword = bcrypt.hashSync(password, bcrypt.genSaltSync(10));
+      // Hash password dengan SHA-512
+      const hashedPassword = crypto
+        .createHash("sha512")
+        .update(password)
+        .digest("hex");
 
-      let formData = {
+      const formData = {
         username: username,
         no_telp: no_telp,
         email: email,
@@ -102,7 +84,7 @@ const saveUser = async (req, res) => {
       // Masukkan pengguna baru
       const result = await new Promise((resolve, reject) => {
         connection.query(
-          "INSERT INTO tbl_users (username, no_telp, email, password, role) VALUES (?,?,?,?,?) ",
+          "INSERT INTO tbl_users (username, no_telp, email, password, role) VALUES (?,?,?,?,?)",
           [username, no_telp, email, hashedPassword, role],
           (err, result) => {
             if (err) {
@@ -128,6 +110,4 @@ const saveUser = async (req, res) => {
   }
 };
 
-module.exports = {
-  saveUser,
-};
+module.exports = { saveUser };
