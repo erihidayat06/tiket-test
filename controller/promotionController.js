@@ -35,14 +35,18 @@ const getAll = async (req, res, next) => {
     });
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_promotions WHERE archived = ?", [0], function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_promotions WHERE archived = ?",
+        [0],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -81,14 +85,18 @@ const getById = async (req, res, next) => {
     const id = req.params.id;
 
     const rows = await new Promise((resolve, reject) => {
-      connection.query("SELECT * FROM tbl_promotions WHERE id_promo = ?", [id], function (err, rows) {
-        connection.release();
-        if (err) {
-          reject(err);
-        } else {
-          resolve(rows);
+      connection.query(
+        "SELECT * FROM tbl_promotions WHERE id_promo = ?",
+        [id],
+        function (err, rows) {
+          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
         }
-      });
+      );
     });
 
     if (rows.length === 0) {
@@ -125,7 +133,13 @@ const create = async (req, res) => {
   if (error) {
     // Hapus file jika ada kesalahan validasi
     if (picture) {
-      const picturePath = path.resolve(__dirname, "..", "public", "uploads", picture);
+      const picturePath = path.resolve(
+        __dirname,
+        "..",
+        "public",
+        "uploads",
+        picture
+      );
       removeFile(picturePath);
     }
     // Kumpulkan semua kesalahan validasi
@@ -154,13 +168,17 @@ const create = async (req, res) => {
 
     // Menjalankan query untuk memasukkan data
     const result = await new Promise((resolve, reject) => {
-      connection.query("INSERT INTO tbl_promotions SET ?", formData, (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "INSERT INTO tbl_promotions SET ?",
+        formData,
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
 
     // Mengirim respons sukses
@@ -194,7 +212,13 @@ const edit = async (req, res) => {
     if (error) {
       // Hapus file jika ada kesalahan validasi
       if (picture_baru) {
-        const picturePath = path.resolve(__dirname, "..", "public", "uploads", picture_baru);
+        const picturePath = path.resolve(
+          __dirname,
+          "..",
+          "public",
+          "uploads",
+          picture_baru
+        );
         removeFile(picturePath);
       }
       // Kumpulkan semua kesalahan validasi
@@ -222,24 +246,34 @@ const edit = async (req, res) => {
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_promotions SET ? WHERE id_promo =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          // Menghapus gambar lama jika ada
-          if (picture_lama && picture_lama.length > 0 && picture_baru) {
-            const filePath = path.join(__dirname, "..", "public", "uploads", picture_lama);
-            fs.unlink(filePath, (err) => {
-              if (err) {
-                console.error("Gagal menghapus gambar lama:", err);
-              } else {
-                console.log("Gambar lama berhasil dihapus:", filePath);
-              }
-            });
+      connection.query(
+        "UPDATE tbl_promotions SET ? WHERE id_promo =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            // Menghapus gambar lama jika ada
+            if (picture_lama && picture_lama.length > 0 && picture_baru) {
+              const filePath = path.join(
+                __dirname,
+                "..",
+                "public",
+                "uploads",
+                picture_lama
+              );
+              fs.unlink(filePath, (err) => {
+                if (err) {
+                  console.error("Gagal menghapus gambar lama:", err);
+                } else {
+                  console.log("Gambar lama berhasil dihapus:", filePath);
+                }
+              });
+            }
+            resolve(result);
           }
-          resolve(result);
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil Edit Promo" });
   } catch (err) {
@@ -270,20 +304,24 @@ const destroy = async (req, res) => {
     });
 
     let id = req.params.id;
-    let archived = true;
+    let archived = 1;
 
     let formData = {
       archived: archived,
     };
 
     const result = await new Promise((resolve, reject) => {
-      connection.query("UPDATE tbl_promotions SET ? WHERE id_promo =?", [formData, id], (err, result) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
+      connection.query(
+        "UPDATE tbl_promotions SET ? WHERE id_promo =?",
+        [formData, id],
+        (err, result) => {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(result);
+          }
         }
-      });
+      );
     });
     res.json({ data: formData, pesan: "Berhasil hapus promo" });
   } catch (err) {
