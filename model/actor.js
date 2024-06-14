@@ -11,6 +11,7 @@ const actorValidate = Joi.object({
   }),
   id_movie: Joi.number(),
   picture_lama: Joi.string(),
+  picture: Joi.string(),
 });
 
 module.exports = actorValidate;

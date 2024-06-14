@@ -247,12 +247,11 @@ const edit = async (req, res) => {
     });
 
     let id = req.params.id;
-    let { name_actor, cast, id_movie } = value;
+    let { name_actor, cast } = value;
 
     let formData = {
       name_actor: name_actor,
       cast: cast,
-      id_movie: id_movie,
       picture: picture,
     };
 

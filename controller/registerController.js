@@ -1,6 +1,7 @@
 const config = require("../library/database");
 const mysql = require("mysql");
 const crypto = require("crypto");
+const jwt = require("jsonwebtoken");
 
 const pool = mysql.createPool(config);
 
@@ -11,20 +12,18 @@ pool.on("error", (err) => {
 const validateUser = (body) => {
   const errors = [];
   if (!body.username || typeof body.username !== "string") {
-    errors.push("Username diperlukan dan harus berupa string.");
+    errors.push("Username is required and must be a string.");
   }
   if (!body.no_telp || typeof body.no_telp !== "string") {
-    errors.push("Nomor telepon diperlukan dan harus berupa string.");
+    errors.push("Phone number is required and must be a string.");
   }
   if (!body.email || typeof body.email !== "string") {
-    errors.push("Email diperlukan dan harus berupa string.");
+    errors.push("Email is required and must be a string.");
   }
   if (!body.password || typeof body.password !== "string") {
-    errors.push("Password diperlukan dan harus berupa string.");
+    errors.push("Password is required and must be a string.");
   }
-  if (!body.role || typeof body.role !== "string") {
-    errors.push("Role diperlukan dan harus berupa string.");
-  }
+
   return errors;
 };
 
@@ -38,7 +37,7 @@ const saveUser = async (req, res) => {
       return res.status(400).json({ errors: validationErrors });
     }
 
-    const { username, no_telp, email, password, role } = req.body;
+    const { username, no_telp, email, password } = req.body;
 
     connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, conn) => {
@@ -50,7 +49,7 @@ const saveUser = async (req, res) => {
       });
     });
 
-    // Periksa apakah pengguna sudah ada
+    // Check if user already exists
     const userExists = await new Promise((resolve, reject) => {
       connection.query(
         "SELECT * FROM tbl_users WHERE username = ? OR email = ?",
@@ -66,9 +65,9 @@ const saveUser = async (req, res) => {
     });
 
     if (userExists) {
-      res.status(400).json({ message: "Username atau email sudah ada" });
+      res.status(400).json({ message: "Username or email already exists." });
     } else {
-      // Hash password dengan SHA-512
+      // Hash password with SHA-512
       const hashedPassword = crypto
         .createHash("sha512")
         .update(password)
@@ -78,14 +77,13 @@ const saveUser = async (req, res) => {
         username: username,
         no_telp: no_telp,
         email: email,
-        role: role,
       };
 
-      // Masukkan pengguna baru
+      // Insert new user
       const result = await new Promise((resolve, reject) => {
         connection.query(
-          "INSERT INTO tbl_users (username, no_telp, email, password, role) VALUES (?,?,?,?,?)",
-          [username, no_telp, email, hashedPassword, role],
+          "INSERT INTO tbl_users (username, no_telp, email, password) VALUES (?,?,?,?)",
+          [username, no_telp, email, hashedPassword],
           (err, result) => {
             if (err) {
               reject(err);
@@ -96,14 +94,26 @@ const saveUser = async (req, res) => {
         );
       });
 
-      // Kirim respons sukses
-      res.json({ data: formData, message: "User berhasil didaftarkan" });
+      // Generate token
+      const token = jwt.sign(
+        { username: username, email: email },
+        "your_jwt_secret", // replace with your own secret key
+        { expiresIn: "1h" }
+      );
+
+      // Send success response with token
+      res.status(201).json({
+        status: true,
+        data: formData,
+        message: "User registered successfully.",
+        token: token,
+      });
     }
   } catch (err) {
     console.error("Error:", err);
     return res.status(500).json({
       error: "Internal Server Error",
-      message: "Terjadi kesalahan saat memproses permintaan Anda",
+      message: "An error occurred while processing your request.",
     });
   } finally {
     if (connection) connection.release();

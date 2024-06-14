@@ -7,6 +7,8 @@ const movieValidate = Joi.object({
     "any.required": "Nama film tidak boleh kosong.",
   }),
 
+  picture: Joi.string(),
+
   picture_lama: Joi.string().allow("").optional(),
 
   trailer: Joi.string().required().messages({
