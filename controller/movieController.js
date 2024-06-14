@@ -37,7 +37,7 @@ const getAll = async (req, res, next) => {
 
     const rows = await new Promise((resolve, reject) => {
       connection.query(
-        "SELECT * FROM tbl_movies INNER JOIN tbl_genreses ON tbl_movies.id_genre = tbl_genreses.id_genre WHERE tbl_movies.archived = false AND tbl_genreses.archived_genre",
+        "SELECT * FROM tbl_movies INNER JOIN tbl_genreses ON tbl_movies.id_genre = tbl_genreses.id_genre WHERE tbl_movies.archived = false AND tbl_genreses.archived_genre = false AND tbl_movies.broadcast_date <=  CURDATE() AND tbl_movies.end_of_show >=  CURDATE()",
         function (err, rows) {
           connection.release();
           if (err) {
@@ -70,10 +70,10 @@ const getAll = async (req, res, next) => {
   }
 };
 
-// Get Id
 const getById = async (req, res, next) => {
+  let connection;
   try {
-    const connection = await new Promise((resolve, reject) => {
+    connection = await new Promise((resolve, reject) => {
       pool.getConnection((err, connection) => {
         if (err) {
           reject(err);
@@ -87,10 +87,67 @@ const getById = async (req, res, next) => {
 
     const rows = await new Promise((resolve, reject) => {
       connection.query(
-        "SELECT * FROM tbl_movies INNER JOIN tbl_genreses ON tbl_movies.id_genre = tbl_genreses.id_genre WHERE tbl_movies.archived = ? AND tbl_genreses.archived_genre = ? AND tbl_movies.id_movie = ?",
-        [0, 0, id],
+        "SELECT * FROM tbl_movies " +
+          "RIGHT JOIN tbl_genreses ON tbl_movies.id_genre = tbl_genreses.id_genre " +
+          "WHERE tbl_movies.archived = ? AND tbl_movies.id_movie = ?",
+        [0, id],
         function (err, rows) {
-          connection.release();
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+
+    const rows_picture = await new Promise((resolve, reject) => {
+      connection.query(
+        "SELECT * FROM tbl_pictures WHERE archived=? AND id_movie=?",
+        [0, id],
+        function (err, rows) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+
+    const rows_actor = await new Promise((resolve, reject) => {
+      connection.query(
+        "SELECT * FROM tbl_actors WHERE archived=? AND id_movie=?",
+        [0, id],
+        function (err, rows) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+
+    const Rowstimes = await new Promise((resolve, reject) => {
+      connection.query(
+        "SELECT * FROM tbl_times WHERE archived=? AND id_movie=? AND dated BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 14 DAY)",
+        [0, id],
+        function (err, rows) {
+          if (err) {
+            reject(err);
+          } else {
+            resolve(rows);
+          }
+        }
+      );
+    });
+
+    const rows_vote = await new Promise((resolve, reject) => {
+      connection.query(
+        "SELECT tbl_users.id_user, tbl_votes.id_vote, tbl_votes.rating, tbl_votes.comment, tbl_users.username, tbl_votes.updated_at FROM tbl_votes LEFT JOIN tbl_users ON tbl_votes.id_user = tbl_users.id_user WHERE tbl_votes.archived = ? AND tbl_votes.id_movie = ? ORDER BY tbl_votes.created_at DESC",
+        [0, id],
+        function (err, rows) {
           if (err) {
             reject(err);
           } else {
@@ -110,7 +167,13 @@ const getById = async (req, res, next) => {
     res.json({
       status: true,
       message: "List Data Posts",
-      movies: rows,
+      movies: {
+        movie: rows[0],
+        pictures: rows_picture,
+        votes: rows_vote,
+        actor: rows_actor,
+        times: Rowstimes,
+      },
     });
   } catch (err) {
     console.error("Error:", err);
@@ -118,6 +181,10 @@ const getById = async (req, res, next) => {
       error: "Internal Server Error",
       message: "An error occurred while processing your request",
     });
+  } finally {
+    if (connection) {
+      connection.release(); // Melepas koneksi setelah selesai
+    }
   }
 };
 

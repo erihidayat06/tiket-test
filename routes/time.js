@@ -6,7 +6,7 @@ const { verifyToken, checkRole } = require("../controller/loginController");
 router.get("/", time.getAll);
 router.get("/:id", time.getById);
 router.post("/create", verifyToken, checkRole("admin"), time.create);
-router.post("/edit/:id", verifyToken, checkRole("admin"), time.edit);
+router.patch("/edit/:id", verifyToken, checkRole("admin"), time.edit);
 router.post("/delete/:id", verifyToken, checkRole("admin"), time.destroy);
 
 module.exports = router;

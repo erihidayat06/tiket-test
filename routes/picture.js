@@ -21,7 +21,9 @@ const storage = multer.diskStorage({
 // File filter to allow only certain file types
 const fileFilter = (req, file, cb) => {
   const allowedTypes = /jpeg|jpg|png|gif/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
+  const extname = allowedTypes.test(
+    path.extname(file.originalname).toLowerCase()
+  );
   const mimetype = allowedTypes.test(file.mimetype);
 
   if (extname && mimetype) {
@@ -38,9 +40,21 @@ const upload = multer({
 });
 /* GET home page. */
 router.get("/", picture.getAll);
-router.get("/", picture.getById);
-router.post("/create", upload.single("picture"), verifyToken, checkRole("admin"), picture.create);
-router.post("/edit/:id", upload.single("picture"), verifyToken, checkRole("admin"), picture.edit);
+router.get("/:id", picture.getById);
+router.post(
+  "/create",
+  upload.single("picture"),
+  verifyToken,
+  checkRole("admin"),
+  picture.create
+);
+router.patch(
+  "/edit/:id",
+  upload.single("picture"),
+  verifyToken,
+  checkRole("admin"),
+  picture.edit
+);
 router.post("/delete/:id", verifyToken, checkRole("admin"), picture.destroy);
 
 module.exports = router;

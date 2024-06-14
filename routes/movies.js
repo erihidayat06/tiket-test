@@ -20,7 +20,7 @@ const storage = multer.diskStorage({
 
 // File filter to allow only certain file types
 const fileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif/;
+  const allowedTypes = /jpeg|jpg|png|gif|webp/;
   const extname = allowedTypes.test(
     path.extname(file.originalname).toLowerCase()
   );
@@ -29,7 +29,7 @@ const fileFilter = (req, file, cb) => {
   if (extname && mimetype) {
     return cb(null, true);
   } else {
-    cb("Error: Only images (JPEG, JPG, PNG, GIF) are allowed!");
+    cb("Error: Only images (JPEG, JPG, PNG, GIF, webp) are allowed!");
   }
 };
 
@@ -42,14 +42,8 @@ const upload = multer({
 /* GET home page. */
 router.get("/", movie.getAll);
 router.get("/:id", movie.getById);
-router.post(
-  "/create",
-  upload.single("picture"),
-  verifyToken,
-  checkRole("admin"),
-  movie.create
-);
-router.post(
+router.post("/create", upload.single("picture"), movie.create);
+router.patch(
   "/edit/:id",
   upload.single("picture"),
   verifyToken,

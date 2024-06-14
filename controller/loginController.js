@@ -62,6 +62,7 @@ const login = (req, res) => {
             req.session.username = results[0].username;
 
             return res.json({
+              status: true,
               pesan: "Berhasil",
               token: token,
             });
